@@ -3,11 +3,45 @@ library(sf)
 library(stars)
 library(raster)
 library(spatstat)
+library(regclass)
+library(tidycensus)
 
 aea <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +ellps=GRS80 +datum=NAD83"
 
 # boundary
-load("/Users/brenna/Documents/School/GEOG 6960/states_shp_win.RData") # owin
+load("data/states_shp_win.RData") # owin
+states_shp <- get_decennial(geography = "state",
+                            variables = c('P1_001N'),
+                            geometry = TRUE,
+                            year = 2020,
+                            show_call = FALSE)
+
+#states_shp <- st_read("states.shp")
+names(states_shp) <- tolower(names(states_shp))
+states_shp$statefp <- substr(states_shp$geoid, 1, 2)
+states_shp$countyfp <- substr(states_shp$geoid, 3, 5)
+
+noncontiguous <- c("02", "15", "72")
+states_shp <- states_shp[!states_shp$statefp %in% noncontiguous, , drop=FALSE]
+
+states_shp <- st_transform(states_shp, st_crs(aea))
+
+#st_write(states_shp, "cont_states.shp")
+
+states_shp.win <- as.owin(states_shp)
+
+length(unique(monitors_sf$lat_long))
+
+monitors_imp <- read.csv("/Users/brenna/Documents/School/GEOG 6960/monitors_imp.csv")
+test <- read.csv("/Users/brenna/Documents/School/GEOG 6960/final project/aqs_monitors-2.csv")
+length(unique(test$site_id))
+head(monitors_imp)
+
+test <- st_as_sf(monitors_imp, coords = c("longitude", "latitude"),
+                 crs = 4326, agr = "constant")
+test <- st_transform(test, st_crs(aea))
+
+monitors_sf$lat_long <- paste0(monitors_sf$lat, monitors_sf$long, sep = ", ")
 
 # point data
 monitors_sf <- st_read("/Users/brenna/Downloads/monitors_sf_clean.shp")
@@ -15,35 +49,121 @@ monitors_sf <- st_as_sf(monitors_sf, coords = c("long", "lat"),
                         crs = 4326, agr = "constant")
 monitors_sf <- st_transform(monitors_sf, st_crs(aea))
 # convert to ppp
-mon_crds <- st_coordinates(monitors_sf)
+mon_crds <- st_coordinates(mons)#monitors_criteria)#test)#monitors_sf)
 monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
-                    window = states_shp.win) #us.proj.win)
-monitors.ppp <- rescale(monitors.ppp), 1000, "km")
+                    window = states_shp.win, marks = mons$criteria) #us.proj.win)
+monitors.ppp <- rescale(monitors.ppp, 1000, "km")
 
 # rasterized covariates
-aian <- as.im(read_stars("data/tifs/aian_lc.tif"))
-asian <- as.im(read_stars("data/tifs/asian_lc.tif"))
-black <- as.im(read_stars("data/tifs/black_lc.tif"))
-hisp <- as.im(read_stars("data/tifs/hispanic_lc.tif"))
-nhpi <- as.im(read_stars("data/tifs/nhpi_lc.tif"))
-other <- as.im(read_stars("data/tifs/other_lc.tif"))
-tom <- as.im(read_stars("data/tifs/tom_lc.tif"))
-metro <- as.im(read_stars("data/tifs/metro.tif")) ##
-urban <- as.im(read_stars("data/urban.tif"))
-pov <- as.im(read_stars("data/tifs/pov_lc.tif"))
-total <- as.im(read_stars("data/tifs/total_lc.tif"))
+aian <- as.im(read_stars("data/tifs/aian_lc.tif")) %>%
+  rescale(1000, "km")
+asian <- as.im(read_stars("data/tifs/asian_lc.tif")) %>%
+  rescale(1000, "km")
+black <- as.im(read_stars("data/tifs/black_lc.tif")) %>%
+  rescale(1000, "km")
+hisp <- as.im(read_stars("data/tifs/hispanic_lc.tif")) %>%
+  rescale(1000, "km")
+nhpi <- as.im(read_stars("data/tifs/nhpi_lc.tif")) %>%
+  rescale(1000, "km")
+other <- as.im(read_stars("data/tifs/other_lc.tif")) %>%
+  rescale(1000, "km")
+tom <- as.im(read_stars("data/tifs/tom_lc.tif")) %>%
+  rescale(1000, "km")
+metro <- as.im(read_stars("data/tifs/metro.tif")) %>%
+  rescale(1000, "km") ##
+urban <- as.im(read_stars("data/urban.tif")) %>%
+  rescale(1000, "km")
+pov <- as.im(read_stars("data/tifs/pov_lc.tif")) %>%
+  rescale(1000, "km")
+total <- as.im(read_stars("data/tifs/total_lc.tif")) %>%
+  rescale(1000, "km")
 
 
-plot(metro)
+# n <- npoints(monitors.ppp)
+# freq <- rpois(n, 3)
+# ind <- rep(seq_len(n), freq)
+# monitors.pppmonitors.ppp <- monitors.ppp[ind]
+# ppm(beibei ~ grad+elev, data=bei.extra)
+
+plot(aian)
 plot(monitors.ppp, add = TRUE)
-fit <- ppm(monitors.ppp ~ asian)
 
 # ppm
-fit1 <- ppm(monitors.ppp ~ (aian + asian + black + hisp +
-                              nhpi + other + tom)*urban*pov + offset(total))
-AIC(fit1) 
+fit <- ppm(monitors.ppp ~ (aian + asian + black + hisp +
+                             nhpi + other + tom)*pov*urban + offset(total))
+summary(fit)
+fit$Q
+AIC(fit)
+# race*urban*pov + off(total):      63505.4 / 25402.22
+# race*metro + pov + off(total):    63653.6 / 25550.43
+# race*pov + metro + off(total):    63562.03 / 25458.86
+# race + pov*metro + off(total):    63562.03 / 25573.74
+# race + metro + pov + off(total):  63695.3 / 25592.12
 
-summary(fit1)
+VIF(fit)
+fit1 <- fit
+# aian    asian    black     hisp     nhpi    other      tom      pov    urban 
+# 1.218805 1.554713 1.227305 1.427738 1.218597 1.211360 1.257731 1.112446 1.073823 
+
+data(simba)
+str(simba)
+# mppm
+mon_crds <- st_coordinates(mons)#monitors_criteria)#test)#monitors_sf)
+monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
+                    window = states_shp.win, marks = mons$criteria) #us.proj.win)
+monitors.ppp <- rescale(monitors.ppp, 1000, "km")
+
+monitors.ppp[]
+
+co.ppp <- subset(monitors.ppp, marks == "co")
+no2.ppp <- subset(monitors.ppp, marks == "no2")
+o3.ppp <- subset(monitors.ppp, marks == "o3")
+pb.ppp <- subset(monitors.ppp, marks == "pb")
+pm.ppp <- subset(monitors.ppp, marks == "pm")
+so2.ppp <- subset(monitors.ppp, marks == "so2")
+
+H <- hyperframe(points = monitors.ppp,
+                group = monitors.ppp$marks,
+                aian = aian, asian = asian, black = black,
+                hisp = hisp, nhpi = nhpi, other = other,
+                tom = tom, pov = pov, urban = urban,
+                total = total)
+# print(H)
+# H <- hyperframe(points = monitors.ppp,
+#                 group = c("co", "no2", "o3", "pb", "pm", "so2"),
+#                 aian = aian, asian = asian, black = black,
+#                 hisp = hisp, nhpi = nhpi, other = other,
+#                 tom = tom, pov = pov, urban = urban,
+#                 total = total)
+                #covs = c(aian, asian, black))
+print(H)
+fit <- mppm(points ~ (aian + asian + black + hisp +
+                                nhpi + other + tom) + urban + pov + total,
+            random = ~ 1 | group,
+            data = H)# + offset(total))
+summary(fit)
+fit$Q
+AIC(fit)
+# marks + race*urban*pov + off(total):    256150
+# marks*race*urban*pov + off(total):      256460   
+# marks*race*pov + metro + off(total):    256443.5
+# marks*race*metro + pov + off(total):    257128.5
+# marks*race + metro + pov + off(total):  257133
+# marks + race + metro + pov + off(total):257063
+# f(marks) + race+metro+pov + off(total): 2028167
+# f(marks) + race*metro*pov + off(total): .
+fit$
+VIF(fit)
+fit1 <- fit
+# aian    asian    black     hisp     nhpi    other      tom      pov    urban 
+# 1.218805 1.554713 1.227305 1.427738 1.218597 1.211360 1.257731 1.112446 1.073823 
+
+# slrm
+fit_log <- slrm(monitors.ppp ~ (aian + asian + black + hisp +
+                                  nhpi + other + tom)*pov*urban + offset(total))
+summary(fit_log)
+
+# ppm - old, wrong point data
 # race*urban*pov + off(total):      755485.2
 # race*metro + pov + off(total):    757850.7
 # race + metro + pov + off(total):  758421.8
@@ -51,76 +171,20 @@ summary(fit1)
 
 ## this sucks — but note that in the results, "urban" means rural (i.e., urban variable = 0)
 
-res <- summary(fit1)$coefs.SE.CI
+res <- summary(fit)$coefs.SE.CI
 names(res) <- tolower(names(res))
 
-res$variable <- row.names(res)
-head(res)
+res <- tibble::rownames_to_column(res, "variable")
 
-res <- tibble::rownames_to_column(res, "row_names")
-
-res_split <- split(res, list(nchar(res$row_names) < 12,  nchar(res$row_names) > 5))
-
-# exponentiate only
-res_split$TRUE.FALSE <- res_split$TRUE.FALSE %>% 
-  mutate(across(c(estimate, s.e., ci95.lo, ci95.hi),
-                function(x) exp(x)))
-
-
-
-
+# exponentiated results
 res_exp <- res %>%
   mutate(across(c(estimate, s.e., ci95.lo, ci95.hi),
-                function(x) round(exp(x), 3)))
-names(res_exp) <- paste(names(res_exp), "exp", sep = "_")
+                function(x) round(exp(x / (1 - x)), 3)))
+res_exp
 
+coef(summary(fit1))[,4]
+str(fit1)
 
-
-results <- cbind(res, res_exp[, 2:5])
-
-
-res$row_names == 
-
-intx_list = vector("list", length = 17)
-for(i in c(11:17)) {
-  int <- fixed_z[which(fixed_z$coef == "mu_z"), "mean"]
-  intx_name_1 <- substr(fixed_z[i, "coef"], 1, 7)
-  intx_name_2 <- substr(fixed_z[i, "coef"], 9, 15)
-  #print(intx_name_2)
-  intx <- fixed_z[i, "mean"]
-  intx_name <- ifelse(intx_name_1 == "x_pov_z", intx_name_2, intx_name_1)
-  fx_1 <- fixed_z[which(fixed_z$coef == intx_name), "mean"]
-  fx_2 <- fixed_z[which(fixed_z$coef == "x_pov_z"), "mean"]
-  
-  prop_fx <- exp(int + intx + fx_1 + fx_2) / (1 + exp(int + intx + fx_1 + fx_2))
-  ci_025 <- exp(fixed_z[which(fixed_z$coef == "mu_z"), "X0.025quant"] +
-                  fixed_z[i, "X0.025quant"] +
-                  fixed_z[which(fixed_z$coef == intx_name), "X0.025quant"] +
-                  fixed_z[which(fixed_z$coef == "x_pov_z"), "X0.025quant"]) /
-    (1 + exp(fixed_z[which(fixed_z$coef == "mu_z"), "X0.025quant"] +
-               fixed_z[i, "X0.025quant"] +
-               fixed_z[which(fixed_z$coef == intx_name), "X0.025quant"] +
-               fixed_z[which(fixed_z$coef == "x_pov_z"), "X0.025quant"]))
-  ci_975 <- exp(fixed_z[which(fixed_z$coef == "mu_z"), "X0.975quant"] +
-                  fixed_z[i, "X0.975quant"] +
-                  fixed_z[which(fixed_z$coef == intx_name), "X0.975quant"] +
-                  fixed_z[which(fixed_z$coef == "x_pov_z"), "X0.975quant"]) /
-    (1 + exp(fixed_z[which(fixed_z$coef == "mu_z"), "X0.975quant"] +
-               fixed_z[i, "X0.975quant"] +
-               fixed_z[which(fixed_z$coef == intx_name), "X0.975quant"] +
-               fixed_z[which(fixed_z$coef == "x_pov_z"), "X0.975quant"]))
-  sig <- ifelse((fixed_z[i, "X0.025quant"] > 0 & fixed_z[i, "X0.975quant"] > 0) |
-                  (fixed_z[i, "X0.025quant"] < 0 & fixed_z[i, "X0.975quant"] < 0),
-                "sig",
-                "not sig")
-  dir <- ifelse(sig == "sig" & fixed_z[i, "mean"] > 0, "+", "-")
-  df <- data.frame(coef = fixed_z[i, "coef"], 
-                   prob = prop_fx,
-                   ci_025 = ci_025,
-                   ci_975 = ci_975,
-                   sig = sig,
-                   dir = dir)
-  intx_list[[i]] <- df
-}
-intx_list = do.call(rbind, intx_list)
-intx_list
+#fit1$
+res$pval <- round(pnorm(res$zval, mean = 0, sd = 1), 5)
+res$pval <- ifelse(res$zval > 0, 1 - res$pval, res$pval)
