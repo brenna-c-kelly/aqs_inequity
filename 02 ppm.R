@@ -49,10 +49,10 @@ monitors_sf <- st_as_sf(monitors_sf, coords = c("long", "lat"),
                         crs = 4326, agr = "constant")
 monitors_sf <- st_transform(monitors_sf, st_crs(aea))
 # convert to ppp
-mon_crds <- st_coordinates(mons)#monitors_criteria)#test)#monitors_sf)
+mon_crds <- st_coordinates(mons$so2)#monitors_criteria)#test)#monitors_sf)
 monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
                     window = states_shp.win, marks = mons$criteria) #us.proj.win)
-monitors.ppp <- rescale(monitors.ppp, 1000, "km")
+monitors.ppp_so2 <- rescale(monitors.ppp, 1000, "km")
 
 # rasterized covariates
 aian <- as.im(read_stars("data/tifs/aian_lc.tif")) %>%
@@ -88,25 +88,69 @@ total <- as.im(read_stars("data/tifs/total_lc.tif")) %>%
 plot(aian)
 plot(monitors.ppp, add = TRUE)
 
-# ppm
-fit <- ppm(monitors.ppp ~ (aian + asian + black + hisp +
-                             nhpi + other + tom)*pov*urban + offset(total))
-summary(fit)
-fit$Q
-AIC(fit)
+# ppms by criteria pollutant
+fit_co <- ppm(monitors.ppp_co ~ (aian + asian + black + hisp +
+                             nhpi + other + tom) + pov + urban + offset(total))
+fit_no2 <- ppm(monitors.ppp_no2 ~ (aian + asian + black + hisp +
+                                nhpi + other + tom)*pov*urban + offset(total))
+fit_o3 <- ppm(monitors.ppp_o3 ~ (aian + asian + black + hisp +
+                                 nhpi + other + tom)*pov+urban + offset(total))
+fit_pb <- ppm(monitors.ppp_pb ~ (aian + asian + black + hisp +
+                                nhpi + other + tom)*pov+urban + offset(total))
+fit_pm <- ppm(monitors.ppp_pm ~ (aian + asian + black + hisp +
+                                nhpi + other + tom)*pov*urban + offset(total))
+fit_so2 <- ppm(monitors.ppp_so2 ~ (aian + asian + black + hisp +
+                                nhpi + other + tom) + urban + pov + offset(total))
+
+fit_pm$Q
+AIC(fit_co)
+AIC(fit_no2)
+AIC(fit_o3)
+AIC(fit_pb)
+AIC(fit_pm)
+AIC(fit_so2)
+#                  all intx / race*pov + metro /  all + / race*urban + pov
+# > AIC(fit_co)   4505.745 / 4481.896 / 4504.011* / 4514.082
+# > AIC(fit_no2)  3799.177* / 3808.147 / 3803.579 / 3803.927
+# > AIC(fit_o3)   14611.7 / 14611.7* / 14666.06 / 14667.86 // 14706.2
+# > AIC(fit_pb)   2897.46 / 2886.344* / 2914.953 / 2920.845 // 2919.828
+# > AIC(fit_pm)   10101.29* / 10110.24 / 10143.89 / 10130.31
+# > AIC(fit_so2)  5934.424 / 5922.01 / 5920.167* / 5925.133 // 5918.231 (race+urban)
+summary(fit_co)
+summary(fit_no2)
+summary(fit_o3)
+summary(fit_pb)
+summary(fit_pm)
+summary(fit_so2)
+
+
+fit_so2$internal$glmdata
+
 # race*urban*pov + off(total):      63505.4 / 25402.22
 # race*metro + pov + off(total):    63653.6 / 25550.43
 # race*pov + metro + off(total):    63562.03 / 25458.86
 # race + pov*metro + off(total):    63562.03 / 25573.74
 # race + metro + pov + off(total):  63695.3 / 25592.12
-
+#Straauss Interaction Effect
+# point patterns won't do a 0 distance interaction
+# standard form (poisson), cox, log-gaussian cox process
+# could cross-generational health outcomes have interactions (proper)
+# other approach might be warranted for temporal
+  # they're equivalent
+  # dispersion nissues would apply to log as well
+# access glm within ppm > get glm objects > pass to ggeffects
+#   to help me, maybe for paper
+#   don't fuss about specfici quantities; is it +/- sig; interactions slope positive
+#   for paper, boil doen to direction and significance
+# they'll want a clear message at this tier; think about how the abstract will work
+#   takeaway
 VIF(fit)
 fit1 <- fit
 # aian    asian    black     hisp     nhpi    other      tom      pov    urban 
 # 1.218805 1.554713 1.227305 1.427738 1.218597 1.211360 1.257731 1.112446 1.073823 
 
 data(simba)
-str(simba)
+print(simba)
 # mppm
 mon_crds <- st_coordinates(mons)#monitors_criteria)#test)#monitors_sf)
 monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
@@ -121,14 +165,15 @@ o3.ppp <- subset(monitors.ppp, marks == "o3")
 pb.ppp <- subset(monitors.ppp, marks == "pb")
 pm.ppp <- subset(monitors.ppp, marks == "pm")
 so2.ppp <- subset(monitors.ppp, marks == "so2")
+# create each ppp without other marks
 
-H <- hyperframe(points = monitors.ppp,
-                group = monitors.ppp$marks,
+H <- hyperframe(points = monitors.ppp,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                group = c("co", "no2", "o3", "pb", "pm", "so2"),
                 aian = aian, asian = asian, black = black,
                 hisp = hisp, nhpi = nhpi, other = other,
                 tom = tom, pov = pov, urban = urban,
                 total = total)
-# print(H)
+print(H)
 # H <- hyperframe(points = monitors.ppp,
 #                 group = c("co", "no2", "o3", "pb", "pm", "so2"),
 #                 aian = aian, asian = asian, black = black,
@@ -137,13 +182,63 @@ H <- hyperframe(points = monitors.ppp,
 #                 total = total)
                 #covs = c(aian, asian, black))
 print(H)
-fit <- mppm(points ~ (aian + asian + black + hisp +
-                                nhpi + other + tom) + urban + pov + total,
-            random = ~ 1 | group,
+str(H)$points
+cbind(H[H$group == "co", ])
+H_0 <- hyperframe(points = monitors.ppp,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                  group = c("all"),
+                  aian = aian, asian = asian, black = black,
+                  hisp = hisp, nhpi = nhpi, other = other,
+                  tom = tom, pov = pov, urban = urban,
+                  total = total)
+H_1 <- hyperframe(points = monitors.ppp_co,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                group = c("co"),
+                aian = aian, asian = asian, black = black,
+                hisp = hisp, nhpi = nhpi, other = other,
+                tom = tom, pov = pov, urban = urban,
+                total = total)
+H_2 <- hyperframe(points = monitors.ppp_no2,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                  group = c("no2"),
+                  aian = aian, asian = asian, black = black,
+                  hisp = hisp, nhpi = nhpi, other = other,
+                  tom = tom, pov = pov, urban = urban,
+                  total = total)
+H_3 <- hyperframe(points = monitors.ppp_o3,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                  group = c("o3"),
+                  aian = aian, asian = asian, black = black,
+                  hisp = hisp, nhpi = nhpi, other = other,
+                  tom = tom, pov = pov, urban = urban,
+                  total = total)
+H_4 <- hyperframe(points = monitors.ppp_pb,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                  group = c("pb"),
+                  aian = aian, asian = asian, black = black,
+                  hisp = hisp, nhpi = nhpi, other = other,
+                  tom = tom, pov = pov, urban = urban,
+                  total = total)
+H_5 <- hyperframe(points = monitors.ppp_pm,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                  group = c("pm"),
+                  aian = aian, asian = asian, black = black,
+                  hisp = hisp, nhpi = nhpi, other = other,
+                  tom = tom, pov = pov, urban = urban,
+                  total = total)
+H_6 <- hyperframe(points = monitors.ppp_so2,#co.ppp, no2.ppp, o3.ppp, pb.ppp, pm.ppp, so2.ppp,
+                  group = c("so2"),
+                  aian = aian, asian = asian, black = black,
+                  hisp = hisp, nhpi = nhpi, other = other,
+                  tom = tom, pov = pov, urban = urban,
+                  total = total)
+H <- rbind.hyperframe(H_3, H_1, H_2, H_4, H_5, H_6) # trying to make largest group (o3) the referent
+H$group <- relevel(factor(H$group), ref = "pm")
+
+fit_H <- mppm(points ~ group + urban + (aian + asian + black + hisp +
+                                          nhpi + other + tom) + pov + offset(total),
             data = H)# + offset(total))
-summary(fit)
+summary(fit_H)
 fit$Q
 AIC(fit)
+plot(H)
+
+# group*race + off(total):        49526.85
+# group*race*pov + off(total):        49318.38
 # marks + race*urban*pov + off(total):    256150
 # marks*race*urban*pov + off(total):      256460   
 # marks*race*pov + metro + off(total):    256443.5
@@ -152,7 +247,7 @@ AIC(fit)
 # marks + race + metro + pov + off(total):257063
 # f(marks) + race+metro+pov + off(total): 2028167
 # f(marks) + race*metro*pov + off(total): .
-fit$
+fit$Y
 VIF(fit)
 fit1 <- fit
 # aian    asian    black     hisp     nhpi    other      tom      pov    urban 
