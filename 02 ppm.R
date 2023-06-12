@@ -30,18 +30,18 @@ states_shp <- st_transform(states_shp, st_crs(aea))
 
 states_shp.win <- as.owin(states_shp)
 
-length(unique(monitors_sf$lat_long))
+#length(unique(monitors_sf$lat_long))
 
-monitors_imp <- read.csv("/Users/brenna/Documents/School/GEOG 6960/monitors_imp.csv")
-test <- read.csv("/Users/brenna/Documents/School/GEOG 6960/final project/aqs_monitors-2.csv")
-length(unique(test$site_id))
-head(monitors_imp)
+#monitors_imp <- read.csv("/Users/brenna/Documents/School/GEOG 6960/monitors_imp.csv")
+#test <- read.csv("/Users/brenna/Documents/School/GEOG 6960/final project/aqs_monitors-2.csv")
+#length(unique(test$site_id))
+#head(monitors_imp)
 
-test <- st_as_sf(monitors_imp, coords = c("longitude", "latitude"),
-                 crs = 4326, agr = "constant")
-test <- st_transform(test, st_crs(aea))
+#test <- st_as_sf(monitors_imp, coords = c("longitude", "latitude"),
+#                 crs = 4326, agr = "constant")
+#test <- st_transform(test, st_crs(aea))
 
-monitors_sf$lat_long <- paste0(monitors_sf$lat, monitors_sf$long, sep = ", ")
+#monitors_sf$lat_long <- paste0(monitors_sf$lat, monitors_sf$long, sep = ", ")
 
 # point data
 monitors_sf <- st_read("/Users/brenna/Downloads/monitors_sf_clean.shp")
@@ -49,10 +49,11 @@ monitors_sf <- st_as_sf(monitors_sf, coords = c("long", "lat"),
                         crs = 4326, agr = "constant")
 monitors_sf <- st_transform(monitors_sf, st_crs(aea))
 # convert to ppp
-mon_crds <- st_coordinates(mons$so2)#monitors_criteria)#test)#monitors_sf)
+mon_crds <- st_coordinates(mons$pm)#monitors_criteria)#test)#monitors_sf)
 monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
-                    window = states_shp.win, marks = mons$criteria) #us.proj.win)
-monitors.ppp_so2 <- rescale(monitors.ppp, 1000, "km")
+                    window = states_shp.win)#, marks = mons$criteria) #us.proj.win)
+monitors.ppp_pm <- rescale(monitors.ppp, 1000, "km")
+#monitors.ppp_pm <- rjitter(monitors.ppp, edge = "none")
 
 # rasterized covariates
 aian <- as.im(read_stars("data/tifs/aian_lc.tif")) %>%
@@ -86,23 +87,28 @@ total <- as.im(read_stars("data/tifs/total_lc.tif")) %>%
 # ppm(beibei ~ grad+elev, data=bei.extra)
 
 plot(aian)
-plot(monitors.ppp, add = TRUE)
+plot(monitors.ppp_so2, add = TRUE)
 
 # ppms by criteria pollutant
 fit_co <- ppm(monitors.ppp_co ~ (aian + asian + black + hisp +
-                             nhpi + other + tom) + pov + urban + offset(total))
+                                   nhpi + other + tom)*pov + urban + offset(total))
 fit_no2 <- ppm(monitors.ppp_no2 ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov*urban + offset(total))
+                                nhpi + other + tom)*pov+urban + offset(total))
 fit_o3 <- ppm(monitors.ppp_o3 ~ (aian + asian + black + hisp +
                                  nhpi + other + tom)*pov+urban + offset(total))
 fit_pb <- ppm(monitors.ppp_pb ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov+urban + offset(total))
+                                nhpi + other + tom)*pov + urban + offset(total))
 fit_pm <- ppm(monitors.ppp_pm ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov*urban + offset(total))
+                                nhpi + other + tom)*pov + urban + offset(total))
 fit_so2 <- ppm(monitors.ppp_so2 ~ (aian + asian + black + hisp +
-                                nhpi + other + tom) + urban + pov + offset(total))
-
+                                     nhpi + other + tom)*pov + urban + offset(total))
+fit_so2$Q
 fit_pm$Q
+fit_pb$Q
+fit_co$Q
+fit_no2$Q
+fit_o3$Q
+
 AIC(fit_co)
 AIC(fit_no2)
 AIC(fit_o3)
@@ -110,12 +116,12 @@ AIC(fit_pb)
 AIC(fit_pm)
 AIC(fit_so2)
 #                  all intx / race*pov + metro /  all + / race*urban + pov
-# > AIC(fit_co)   4505.745 / 4481.896 / 4504.011* / 4514.082
-# > AIC(fit_no2)  3799.177* / 3808.147 / 3803.579 / 3803.927
-# > AIC(fit_o3)   14611.7 / 14611.7* / 14666.06 / 14667.86 // 14706.2
-# > AIC(fit_pb)   2897.46 / 2886.344* / 2914.953 / 2920.845 // 2919.828
-# > AIC(fit_pm)   10101.29* / 10110.24 / 10143.89 / 10130.31
-# > AIC(fit_so2)  5934.424 / 5922.01 / 5920.167* / 5925.133 // 5918.231 (race+urban)
+# > AIC(fit_co)   4765.965 / 4748.102* / 4801.056 / 4810.141
+# > AIC(fit_no2)  8789.852* / 8790.951 / 8817.708 / 8810.91
+# > AIC(fit_o3)   22061.49* / 22062.43 / 22126.73 / 22127.78 
+# > AIC(fit_pb)   2917.702 / 2905.743* / 2934.745 / 2940.461
+# > AIC(fit_pm)   22067.79* / 22098.2 / 22134.23 / 22110.27
+# > AIC(fit_so2)  8341.569 / 8331.611* / 8382.476 / 8385.113 // 8336.576 (race*urban + race*pov)
 summary(fit_co)
 summary(fit_no2)
 summary(fit_o3)
@@ -123,7 +129,7 @@ summary(fit_pb)
 summary(fit_pm)
 summary(fit_so2)
 
-
+fit_no2$internal$glmfit
 fit_so2$internal$glmdata
 
 # race*urban*pov + off(total):      63505.4 / 25402.22
@@ -144,7 +150,7 @@ fit_so2$internal$glmdata
 #   for paper, boil doen to direction and significance
 # they'll want a clear message at this tier; think about how the abstract will work
 #   takeaway
-VIF(fit)
+VIF(fit_so2)
 fit1 <- fit
 # aian    asian    black     hisp     nhpi    other      tom      pov    urban 
 # 1.218805 1.554713 1.227305 1.427738 1.218597 1.211360 1.257731 1.112446 1.073823 

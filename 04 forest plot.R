@@ -2,11 +2,15 @@
 library(dplyr)
 library(forestplot)
 
-ppm_res <- read.csv("/Users/brenna/Documents/School/Research/Air measurement/Env Health Persp/ppm results.csv")
-names(ppm_res) <- c("variable", "mean", "se", "lower", "upper", "ztest", "zval")
-ppm_res$mean <- round(ppm_res$mean, 2)
+#ppm_res <- read.csv("/Users/brenna/Documents/School/Research/Air measurement/Env Health Persp/ppm results.csv")
 
-ppm_res %>%
+res_forest <- res
+names(res_forest) <- c("variable", "mean", "se", "lower", "upper", "ztest", "zval")
+#res_forest <- res_forest[order(res_forest$variable), ]
+
+res_forest %>%
+  mutate(across(c(mean, se, lower, upper),
+                function(x) round(exp(x), 4))) %>%
   forestplot(labeltext = c(variable, mean, ztest),
              #clip = c(0.7, 2.25),
              boxsize = 0.25,

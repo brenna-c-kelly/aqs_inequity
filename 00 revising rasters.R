@@ -1,0 +1,175 @@
+
+library(tidyr)
+library(dplyr)
+library(purrr)
+library(raster)
+library(viridis)
+library(fasterize)
+
+bg_vars <- function(ST) {
+  for (i in ST) {
+    z_st <- get_acs(geography = "block group",
+                    variables = c(#'B25003_003'#, #renter
+                      #'B25003_002', #owner
+                      #'B15003_001', #denom
+                      'C17002_003', 'C17002_002', 'C17002_001'#, #below pov
+                      #'C17002_005', 'C17002_006', 'C17002_007', #over
+                      #'C17002_008', # way over
+                      #'C17002_001', # denom
+                      #'B01001_006', 'B01001_005', 'B01001_004', 'B01001_003', #male under 18
+                      #'B01001_027', 'B01001_028', 'B01001_029', 'B01001_030', # female under 18
+                      #'B01001_020', 'B01001_021', 'B01001_022', 'B01001_023', 'B01001_024', 'B01001_025', #older male
+                      #'B01001_044', 'B01001_045', 'B01001_046', 'B01001_047', 'B01001_048', 'B01001_049', #older female
+                      #                            'B01001_026', #female denom
+                      #                            'B01001_002' #male denom
+                    ),
+                    state = i,
+                    geometry = TRUE,
+                    year = 2020,
+                    show_call = FALSE)
+    z_st <- z_st %>%
+      spread(variable, estimate) %>%
+      group_by(GEOID) %>%
+      fill(#B25003_003, #renter
+        #B25003_002, #owner
+        #B15003_001, #denom
+        C17002_003, C17002_002, C17002_001#, #below pov
+        #C17002_005, C17002_006, C17002_007, #over
+        #C17002_008, # way over
+        #C17002_001, # denom
+        #B01001_006, B01001_005, B01001_004, B01001_003, #male under 18
+        #B01001_027, B01001_028, B01001_029, B01001_030, # female under 18
+        #B01001_020, B01001_021, B01001_022, B01001_023, B01001_024, B01001_025, #older male
+        #B01001_044, B01001_045, B01001_046, B01001_047, B01001_048, B01001_049, #older female
+        #B01001_026, #female denom
+        #B01001_002 #male denom
+      ) %>%
+      #rename(total = P1_001N, hispanic = P2_002N, #Hispanic/Latino
+      #       white = P2_005N, black = P2_006N, #Black or African American alone
+      #       aian = P2_007N, asian = P2_008N, #Asian alone
+      #       nhpi = P2_009N, other = P2_010N, #Some Other Race alone
+      #       tom = P2_011N) %>%
+      # mutate(#renter_prop = B25003_003/B15003_001, #Hispanic/Latino
+      #       owner_prop = B25003_002/B15003_001,
+      #      below_pov_prop = (C17002_004+C17002_003+C17002_002)/C17002_001#, #White
+      #       under_18 = (B01001_006+B01001_005+B01001_004+B01001_003+
+      #                     B01001_027+B01001_028+B01001_029+B01001_030)/(B01001_026+B01001_002),
+      #       older = (B01001_020+B01001_021+B01001_022+B01001_023+B01001_024+B01001_025+
+    #                     B01001_044+B01001_045+B01001_046+B01001_047+B01001_048+B01001_049)/(B01001_026+B01001_002)
+    #      ) %>%
+    drop_na()
+    st_write(z_st, paste0("data/poverty/", i, ".shp"))
+  }
+}
+
+ST <- c("AL", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", 
+        "FL", "GA", "ID", "IL", "IN", "IA", "KS", "KY",
+        "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", 
+        "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", 
+        "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", 
+        "VT", "VA", "WA", "WV", "WI", "WY")
+bg_vars(ST)
+
+bg_covs <- map(list.files("data/poverty/", full.names = T, pattern = ".shp"), st_read) %>%
+  bind_rows() %>%
+  st_write("data/poverty.shp")
+
+plot(pov)
+
+poverty <- st_read("data/poverty.shp")
+
+poverty$below_pov <- poverty$C17002_002 + poverty$C17002_003
+poverty$pov_p <- poverty$below_pov / poverty$C17002_001
+poverty$pov_p[is.na(poverty$pov_p)] <- 0
+poverty$pov_perc <- poverty$pov_p*100
+
+poverty <- poverty[!st_is_empty(poverty), , drop=FALSE]
+aea <-  "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +ellps=GRS80 +datum=NAD83"
+poverty <- st_transform(poverty, st_crs(aea))
+
+tm_shape(poverty) +
+  tm_polygons(col = "pov_perc", lwd = 0, palette = "plasma")
+
+poverty$pov_perc_lc <- log(poverty$pov_perc + 0.5) - log(mean(poverty$pov_perc + 0.5))
+
+skewness(poverty$pov_perc_lc)
+
+table(poverty$pov_perc > 0 & poverty$pov_perc < 0.5)
+
+names(bg_vars)
+hist(bg_vars$pov_perc_l)
+
+library(moments)
+skewness(bg_vars_log$aian_p_lc)
+
+bg_vars$aian_p_lc <- log(bg_vars$aian_p + 0.00001) - log(mean(bg_vars$aian_p + 0.00001))
+bg_vars$black_p_lc <- log(bg_vars$black_p + 0.0001) - log(mean(bg_vars$black_p + 0.0001))
+bg_vars$
+
+hist(bg_vars$aian_p_lc)
+summary(bg_vars$aian_p_lc)
+skewness(bg_vars$black_p_lc)
+
+summary(bg_vars$black_p)
+
+bg_vars$black_q <- case_when(bg_vars$black_p <= quantile(bg_vars$black_p, 0.25) ~ "0-0.25",
+                             bg_vars$black_p <= quantile(bg_vars$black_p, 0.5) &
+                               bg_vars$black_p > quantile(bg_vars$black_p, 0.25) ~ "0.25-0.50",
+                             bg_vars$black_p <= quantile(bg_vars$black_p, 0.75) &
+                               bg_vars$black_p > quantile(bg_vars$black_p, 0.5) ~ "0.50-0.75",
+                             bg_vars$black_p > quantile(bg_vars$black_p, 0.75) ~ "0.75-1.00")
+bg_vars$black_q <- ifelse(bg_vars$black_p > quantile(bg_vars$black_p, 0.75), "1", "0")
+bg_vars$black_q <- relevel(as.factor(bg_vars$black_q), ref = "0-0.25")
+
+bg_vars$black_q <- case_when(bg_vars$black_p <= quantile(bg_vars$black_p, 0.2) ~ -2,
+                             bg_vars$black_p <= quantile(bg_vars$black_p, 0.4) &
+                               bg_vars$black_p > quantile(bg_vars$black_p, 0.2) ~ -1,
+                             bg_vars$black_p <= quantile(bg_vars$black_p, 0.6) &
+                               bg_vars$black_p > quantile(bg_vars$black_p, 0.4) ~ 0,
+                             bg_vars$black_p <= quantile(bg_vars$black_p, 0.6) &
+                               bg_vars$black_p > quantile(bg_vars$black_p, 0.8) ~ 1,
+                             bg_vars$black_p <= quantile(bg_vars$black_p, 1) ~ 2)
+summary(bg_vars$black_q)
+
+ext <- extent(bg_vars)
+r <- raster(ext, res = 4000)
+black_q_r <- fasterize(bg_vars, r, field = "black_q")
+writeRaster(black_q_r, filename = "data/black_q3.tif")
+black_q_im <- as.im(read_stars("data/black_q3.tif")) %>%
+  rescale(1000, "km")
+
+test <- st_drop_geometry(bg_vars)
+
+f <- factor(test[, "black_q"])
+dim(f) <- c(236882, 1)
+plot(f)
+f <- as.matrix(f)
+Z <- as.im(as.matrix(bg_vars$black_q), W = states_shp.win)
+plot(Z)
+levels(black_q_im) <- c("0.25", "0.5", "0.75", "1")
+  #c(1 == "0.25", 2 == "0.5", 3 == "0.75", 4 == "1")
+fit_so2_q <- ppm(monitors.ppp_so2 ~ black_q_im*pov_im + urban + offset(total))
+summary(fit_so2_q)
+plot(black_q_im)
+
+rbind(bg_vars$geometry, bg_vars$black_q)
+
+test <- bg_vars %>%
+  filter(aian_p != 0)
+skewness(test$aian_p_lc)
+
+table(bg_vars$aian_p == 0)
+
+# rasterize log-transformed poverty
+summary(poverty$pov_perc_lc)
+
+ext <- extent(poverty)
+r <- raster(ext, res = 4000)
+pov_r <- fasterize(poverty, r, field = "pov_perc_lc")
+writeRaster(pov_r, filename = "data/pov_lc_v2.tif")
+pov_im <- as.im(read_stars("data/pov_lc_v2.tif")) %>%
+  rescale(1000, "km")
+
+
+
+

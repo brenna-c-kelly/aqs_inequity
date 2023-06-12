@@ -1,4 +1,6 @@
 
+library(sf)
+aea <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +ellps=GRS80 +datum=NAD83"
 
 aqs <- read.csv("/Users/brenna/Downloads/aqs_sites-2.csv")
 table(aqs$Location.Setting, aqs$Land.Use)
@@ -51,7 +53,9 @@ mons$criteria <- as.factor(mons$criteria)
 # plot(density(split(criteria)), main = "criteria density surfaces")
 
 # no duplicate locations
-mons <- mons[!duplicated(mons$lat_lon), ]
+#mons <- mons[!duplicated(mons$lat_lon), ]
+
+table(!duplicated(mons$so2$lat_lon), mons$so2$criteria)
 
 mons <- st_as_sf(mons, coords = c("Longitude", "Latitude"), 
                         crs = 4326, agr = "constant")
@@ -62,7 +66,17 @@ mons <- st_transform(mons, st_crs(aea))
 #aqs$Site.Number <- str_pad(aqs$Site.Number, 4, pad = "0")
 #mons$Site.Num <- str_pad(mons$Site.Num, 4, pad = "0")
 
+table(is.na(mons$o3$lat_lon))
+
 mons <- split(mons, mons$criteria, 6)
+
+mons$pm <- mons$pm[!duplicated(mons$pm$lat_lon), ]
+mons$co <- mons$co[!duplicated(mons$co$lat_lon), ]
+mons$no2 <- mons$no2[!duplicated(mons$no2$lat_lon), ]
+mons$o3 <- mons$o3[!duplicated(mons$o3$lat_lon), ]
+mons$pb <- mons$pb[!duplicated(mons$pb$lat_lon), ]
+mons$so2 <- mons$so2[!duplicated(mons$so2$lat_lon), ]
+
 #table(mons$criteria)
 
 
