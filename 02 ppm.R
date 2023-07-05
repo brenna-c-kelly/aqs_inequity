@@ -56,25 +56,25 @@ monitors.ppp_pm <- rescale(monitors.ppp, 1000, "km")
 #monitors.ppp_pm <- rjitter(monitors.ppp, edge = "none")
 
 # rasterized covariates
-aian <- as.im(read_stars("data/tifs/aian_lc.tif")) %>%
+aian <- as.im(read_stars('data/quintiles/aian_q.tif')) %>%#"data/tifs/aian_lc.tif")) %>%
   rescale(1000, "km")
-asian <- as.im(read_stars("data/tifs/asian_lc.tif")) %>%
+asian <- as.im(read_stars('data/quintiles/asian_q.tif')) %>%#("data/tifs/asian_lc.tif")) %>%
   rescale(1000, "km")
-black <- as.im(read_stars("data/tifs/black_lc.tif")) %>%
+black <- as.im(read_stars('data/quintiles/black_q.tif')) %>%#("data/tifs/black_lc.tif")) %>%
   rescale(1000, "km")
-hisp <- as.im(read_stars("data/tifs/hispanic_lc.tif")) %>%
+hisp <- as.im(read_stars('data/quintiles/hispanic_q.tif')) %>%#("data/tifs/hispanic_lc.tif")) %>%
   rescale(1000, "km")
-nhpi <- as.im(read_stars("data/tifs/nhpi_lc.tif")) %>%
+nhpi <- as.im(read_stars('data/quintiles/nhpi_q.tif')) %>%#("data/tifs/nhpi_lc.tif")) %>%
   rescale(1000, "km")
-other <- as.im(read_stars("data/tifs/other_lc.tif")) %>%
+other <- as.im(read_stars('data/quintiles/other_q.tif')) %>%#("data/tifs/other_lc.tif")) %>%
   rescale(1000, "km")
-tom <- as.im(read_stars("data/tifs/tom_lc.tif")) %>%
+tom <- as.im(read_stars('data/quintiles/tom_q.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
   rescale(1000, "km")
-metro <- as.im(read_stars("data/tifs/metro.tif")) %>%
+rural <- as.im(read_stars('data/rural_urban.tif')) %>%#("data/tifs/metro.tif")) %>%
   rescale(1000, "km") ##
-urban <- as.im(read_stars("data/urban.tif")) %>%
-  rescale(1000, "km")
-pov <- as.im(read_stars("data/tifs/pov_lc.tif")) %>%
+#urban <- as.im(read_stars('data/quintiles/aian_q.tif')) %>%#("data/urban.tif")) %>%
+#  rescale(1000, "km")
+pov <- as.im(read_stars('data/quintiles/pov_q.tif')) %>%#("data/tifs/pov_lc.tif")) %>%
   rescale(1000, "km")
 total <- as.im(read_stars("data/tifs/total_lc.tif")) %>%
   rescale(1000, "km")
@@ -91,17 +91,17 @@ plot(monitors.ppp_so2, add = TRUE)
 
 # ppms by criteria pollutant
 fit_co <- ppm(monitors.ppp_co ~ (aian + asian + black + hisp +
-                                   nhpi + other + tom)*pov + urban + offset(total))
+                                   nhpi + other + tom)*pov*rural + offset(total))
 fit_no2 <- ppm(monitors.ppp_no2 ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov+urban + offset(total))
+                                nhpi + other + tom)*pov*rural + offset(total))
 fit_o3 <- ppm(monitors.ppp_o3 ~ (aian + asian + black + hisp +
-                                 nhpi + other + tom)*pov+urban + offset(total))
+                                 nhpi + other + tom)*pov*rural + offset(total))
 fit_pb <- ppm(monitors.ppp_pb ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov + urban + offset(total))
+                                nhpi + other + tom)*pov*rural + offset(total))
 fit_pm <- ppm(monitors.ppp_pm ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov + urban + offset(total))
+                                nhpi + other + tom)*pov*rural + offset(total))
 fit_so2 <- ppm(monitors.ppp_so2 ~ (aian + asian + black + hisp +
-                                     nhpi + other + tom)*pov + urban + offset(total))
+                                     nhpi + other + tom)*pov*rural + offset(total))
 fit_so2$Q
 fit_pm$Q
 fit_pb$Q
@@ -115,11 +115,28 @@ AIC(fit_o3)
 AIC(fit_pb)
 AIC(fit_pm)
 AIC(fit_so2)
+
+
+# > AIC(fit_co)
+# [1] 4882.603 / 4880.171 / 4904.138 / 4901.207
+# > AIC(fit_no2)
+# [1] 8866.33 / 8873.301 / 8893.974 / 8877.923
+# > AIC(fit_o3)
+# [1] 22113.05 / 22140.32 / 22141.82 / 22125.16
+# > AIC(fit_pb)
+# [1] 2907.587 / 2922.753 / 2925.791 / 2921.695
+# > AIC(fit_pm)
+# [1] 22151.04 / 22202.69 / 22210.64 / 22163.81
+# > AIC(fit_so2)
+# [1] 8335.831 / 8337.19 / 8370.246 / 8365.49
+
 #                  all intx / race*pov + metro /  all + / race*urban + pov
 # > AIC(fit_co)   4765.965 / 4748.102* / 4801.056 / 4810.141
+#                 4882.603 / 4880.171 / 
 # > AIC(fit_no2)  8789.852* / 8790.951 / 8817.708 / 8810.91
 # > AIC(fit_o3)   22061.49* / 22062.43 / 22126.73 / 22127.78 
 # > AIC(fit_pb)   2917.702 / 2905.743* / 2934.745 / 2940.461
+#                 2907.587 / 2922.753
 # > AIC(fit_pm)   22067.79* / 22098.2 / 22134.23 / 22110.27
 # > AIC(fit_so2)  8341.569 / 8331.611* / 8382.476 / 8385.113 // 8336.576 (race*urban + race*pov)
 summary(fit_co)

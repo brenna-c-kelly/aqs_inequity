@@ -57,14 +57,14 @@ ruca$rural_urban <- relevel(as.factor(ruca$rural_urban), ref = "urban")
 
 summary(bg_vars_ruca$rural_urban)
 
-aggregate(ruca$total, by = list(ruca$rural_urban), FUN = sum)
-summary(ruca$total)
+aggregate(ruca$total, by = list(ruca$rural_urban), FUN = max)
+names(bg_vars_ruca)
 
-tableone::CreateTableOne(vars = c("total", "hispanic_p", "white_p", "black_p",
-                                  "aian_p", "asian_p", "nhpi_p", "other_p", 
-                                  "tom_p"),
+tableone::CreateTableOne(vars = c("total.y", "hispanic_p.y", "white_p.y", "black_p.y",
+                                  "aian_p.y", "asian_p.y", "nhpi_p.y", "other_p.y", 
+                                  "tom_p.y"),
                          strata = c("rural_urban"),
-                         data = ruca)
+                         data = bg_vars_ruca)
 table(ruca$ruca_code, ruca$rural_urban)
 library(moments)
 
@@ -72,7 +72,8 @@ plot(urban)
 
 library(tmap)
 tm_shape(bg_vars_ruca) +
-  tm_polygons(col = "rural_urban", lwd = 0)
+  tm_polygons(col = "rural_urban", lwd = 0) +
+  tm_shape(states)
 
 
 #### monitors

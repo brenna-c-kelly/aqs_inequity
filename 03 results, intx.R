@@ -18,20 +18,18 @@ res_hi_order <- res
 
 ## independent effects
 #  exp(B1)
-intercept <- res[which(res$variable == "(Intercept)"), ]
-res
-#adding intercept vals
-
 res_ind <- res[which(nchar(res$variable) <= 5), ]
-res_ind <- res_ind  %>%
-  mutate(estimate = estimate + intercept[1, 2]) %>%
-  mutate(s.e. =  s.e. + intercept[1, 3]) %>%
-  mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
-  mutate(ci95.hi =  ci95.hi + intercept[1, 5])
+#adding intercept vals
+#intercept <- res[which(res$variable == "(Intercept)"), ]
+# res_ind <- res_ind  %>%
+#   mutate(estimate = estimate + intercept[1, 2]) %>%
+#   mutate(s.e. =  s.e. + intercept[1, 3]) %>%
+#   mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
+#   mutate(ci95.hi =  ci95.hi + intercept[1, 5])
 
 res_ind <- res_ind %>%
  mutate(across(c(estimate, s.e., ci95.lo, ci95.hi),
-               function(x) round(exp(x), 10)))
+               function(x) round(exp(x), 4)))
 res_ind
 
 
@@ -76,27 +74,27 @@ for(i in 2:10) {
 
 # getting intercept rows for summing
 intercept <- res_1_order_urban_1[which(res_1_order_urban_1$Group.1 == "(Intercept)"), ]
-res
+
 #adding intercept vals
-res_1_order_urban_1 <- res_1_order_urban_1  %>%
-  mutate(estimate = estimate + intercept[1, 2]) %>%
-  mutate(s.e. =  s.e. + intercept[1, 3]) %>%
-  mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
-  mutate(ci95.hi =  ci95.hi + intercept[1, 5])
-res_1_order_pov_1 <- res_1_order_pov_1  %>%
-  mutate(estimate =  estimate + intercept[1, 2]) %>%
-  mutate(s.e. =  s.e. + intercept[1, 3]) %>%
-  mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
-  mutate(ci95.hi = ci95.hi + intercept[1, 5])
+# res_1_order_urban_1 <- res_1_order_urban_1  %>%
+#   mutate(estimate = estimate + intercept[1, 2]) %>%
+#   mutate(s.e. =  s.e. + intercept[1, 3]) %>%
+#   mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
+#   mutate(ci95.hi =  ci95.hi + intercept[1, 5])
+# res_1_order_pov_1 <- res_1_order_pov_1  %>%
+#   mutate(estimate =  estimate + intercept[1, 2]) %>%
+#   mutate(s.e. =  s.e. + intercept[1, 3]) %>%
+#   mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
+#   mutate(ci95.hi = ci95.hi + intercept[1, 5])
 
 # exponentiating summed coefficients
 res_1_order_urban <- res_1_order_urban_1 %>%
   mutate(across(c(estimate, s.e., ci95.lo, ci95.hi),
-                function(x) round(exp(x), 10)))
+                function(x) round(exp(x), 4)))
 res_1_order_urban$Group.1 <- paste0(res_1_order_urban$Group.1, "_urban")
 res_1_order_pov <- res_1_order_pov_1 %>%
   mutate(across(c(estimate, s.e., ci95.lo, ci95.hi),
-                function(x) round(exp(x), 10)))
+                function(x) round(exp(x), 4)))
 res_1_order_pov$Group.1 <- paste0(res_1_order_pov$Group.1, "_pov")
 
 # results
@@ -157,16 +155,16 @@ intx_list = do.call(rbind, intx_list)
 intx_list$variable <- data.frame(t(x[1, 1:7]))[, "X1"]
 
 # add intercept
-intx_list <- intx_list  %>%
-  mutate(estimate =  estimate + intercept[1, 2]) %>%
-  mutate(s.e. =  s.e. + intercept[1, 3]) %>%
-  mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
-  mutate(ci95.hi = ci95.hi + intercept[1, 5])
+# intx_list <- intx_list  %>%
+#   mutate(estimate =  estimate + intercept[1, 2]) %>%
+#   mutate(s.e. =  s.e. + intercept[1, 3]) %>%
+#   mutate(ci95.lo =  ci95.lo + intercept[1, 4]) %>%
+#   mutate(ci95.hi = ci95.hi + intercept[1, 5])
 
 # exponentiate
 res_hi_order <- intx_list %>%
   mutate(across(c(estimate, s.e., ci95.lo, ci95.hi),
-                function(x) round(exp(x), 10))) %>%
+                function(x) round(exp(x), 4))) %>%
   relocate(variable, .before = estimate)
 
 ## make sure to reset res_hi_order at beginning
@@ -193,13 +191,10 @@ library(forestplot)
 names(res_interpreted) <- c("variable", "mean", "se", "lower", "upper")
 
 res_interpreted <- res_interpreted[order(res_interpreted$variable), ]
-res_interpreted$mean <- res_interpreted$mean * 10
-res_interpreted$lower <- res_interpreted$lower * 10
-res_interpreted$upper <- res_interpreted$upper * 10
 
 res_interpreted %>%
   forestplot(labeltext = c(variable, mean),
-             clip = c(0, 0.5),
+             clip = c(0, 4.5),
              boxsize = 0.25,
              #line.margin = 0.2,
              xlog = FALSE,
@@ -218,6 +213,8 @@ res_interpreted %>%
   #              significance = ".",
 #              is.summary = TRUE) %>% 
 fp_set_zebra_style("#f7f7f7")
+
+exp(-0.32650885 + -0.90230984 + 0.72854995) # urban*pov
 
 library(sjPlot)
 str(test)

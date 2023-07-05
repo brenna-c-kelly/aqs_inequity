@@ -121,21 +121,94 @@ bg_vars$black_q <- case_when(bg_vars$black_p <= quantile(bg_vars$black_p, 0.25) 
 bg_vars$black_q <- ifelse(bg_vars$black_p > quantile(bg_vars$black_p, 0.75), "1", "0")
 bg_vars$black_q <- relevel(as.factor(bg_vars$black_q), ref = "0-0.25")
 
-bg_vars$black_q <- case_when(bg_vars$black_p <= quantile(bg_vars$black_p, 0.2) ~ -2,
+bg_vars <- bg_vars %>%
+  mutate(black_q = case_when(bg_vars$black_p <= quantile(bg_vars$black_p, 0.2) ~ -2,
                              bg_vars$black_p <= quantile(bg_vars$black_p, 0.4) &
                                bg_vars$black_p > quantile(bg_vars$black_p, 0.2) ~ -1,
                              bg_vars$black_p <= quantile(bg_vars$black_p, 0.6) &
                                bg_vars$black_p > quantile(bg_vars$black_p, 0.4) ~ 0,
                              bg_vars$black_p <= quantile(bg_vars$black_p, 0.6) &
                                bg_vars$black_p > quantile(bg_vars$black_p, 0.8) ~ 1,
-                             bg_vars$black_p <= quantile(bg_vars$black_p, 1) ~ 2)
-summary(bg_vars$black_q)
+                             bg_vars$black_p <= quantile(bg_vars$black_p, 1) ~ 2)) %>%
+  mutate(hispanic_q = case_when(bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.2) ~ -2,
+                                bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.4) &
+                                  bg_vars$hispanic_p > quantile(bg_vars$hispanic_p, 0.2) ~ -1,
+                                bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.6) &
+                                  bg_vars$hispanic_p > quantile(bg_vars$hispanic_p, 0.4) ~ 0,
+                                bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.6) &
+                                  bg_vars$hispanic_p > quantile(bg_vars$hispanic_p, 0.8) ~ 1,
+                                bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 1) ~ 2)) %>%
+  mutate(aian_q = case_when(bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.2) ~ -2,
+                                bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.4) &
+                                  bg_vars$aian_p > quantile(bg_vars$aian_p, 0.2) ~ -1,
+                                bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.6) &
+                                  bg_vars$aian_p > quantile(bg_vars$aian_p, 0.4) ~ 0,
+                                bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.6) &
+                                  bg_vars$aian_p > quantile(bg_vars$aian_p, 0.8) ~ 1,
+                                bg_vars$aian_p <= quantile(bg_vars$aian_p, 1) ~ 2)) %>%
+  mutate(asian_q = case_when(bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.2) ~ -2,
+                                bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.4) &
+                                  bg_vars$asian_p > quantile(bg_vars$asian_p, 0.2) ~ -1,
+                                bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.6) &
+                                  bg_vars$asian_p > quantile(bg_vars$asian_p, 0.4) ~ 0,
+                                bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.6) &
+                                  bg_vars$asian_p > quantile(bg_vars$asian_p, 0.8) ~ 1,
+                                bg_vars$asian_p <= quantile(bg_vars$asian_p, 1) ~ 2)) %>%
+  mutate(nhpi_q = case_when(bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.2) ~ -2,
+                                bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.4) &
+                                  bg_vars$nhpi_p > quantile(bg_vars$nhpi_p, 0.2) ~ -1,
+                                bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.6) &
+                                  bg_vars$nhpi_p > quantile(bg_vars$nhpi_p, 0.4) ~ 0,
+                                bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.6) &
+                                  bg_vars$nhpi_p > quantile(bg_vars$nhpi_p, 0.8) ~ 1,
+                                bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 1) ~ 2)) %>%
+  mutate(other_q = case_when(bg_vars$other_p <= quantile(bg_vars$other_p, 0.2) ~ -2,
+                                bg_vars$other_p <= quantile(bg_vars$other_p, 0.4) &
+                                  bg_vars$other_p > quantile(bg_vars$other_p, 0.2) ~ -1,
+                                bg_vars$other_p <= quantile(bg_vars$other_p, 0.6) &
+                                  bg_vars$other_p > quantile(bg_vars$other_p, 0.4) ~ 0,
+                                bg_vars$other_p <= quantile(bg_vars$other_p, 0.6) &
+                                  bg_vars$other_p > quantile(bg_vars$other_p, 0.8) ~ 1,
+                                bg_vars$other_p <= quantile(bg_vars$other_p, 1) ~ 2)) %>%
+  mutate(tom_q = case_when(bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.2) ~ -2,
+                                bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.4) &
+                                  bg_vars$tom_p > quantile(bg_vars$tom_p, 0.2) ~ -1,
+                                bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.6) &
+                                  bg_vars$tom_p > quantile(bg_vars$tom_p, 0.4) ~ 0,
+                                bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.6) &
+                                  bg_vars$tom_p > quantile(bg_vars$tom_p, 0.8) ~ 1,
+                                bg_vars$tom_p <= quantile(bg_vars$tom_p, 1) ~ 2))
 
+
+poverty <- poverty %>%
+  mutate(pov_q = case_when(pov_perc <= quantile(pov_perc, 0.2) ~ -2,
+                           pov_perc <= quantile(pov_perc, 0.4) &
+                             pov_perc > quantile(pov_perc, 0.2) ~ -1,
+                           pov_perc <= quantile(pov_perc, 0.6) &
+                             pov_perc > quantile(pov_perc, 0.4) ~ 0,
+                           pov_perc <= quantile(pov_perc, 0.6) &
+                             pov_perc > quantile(pov_perc, 0.8) ~ 1,
+                           pov_perc <= quantile(pov_perc, 1) ~ 2))   %>%
+  mutate(pov_q.20 = ifelse(pov_perc <= quantile(pov_perc, 0.2), 1, 0)) %>%
+  mutate(pov_q.40 = ifelse(pov_perc <= quantile(pov_perc, 0.4) &
+                             pov_perc > quantile(pov_perc, 0.2), 1, 0)) %>%
+  mutate(pov_q.60 = ifelse(pov_perc <= quantile(pov_perc, 0.6) &
+                             pov_perc > quantile(pov_perc, 0.4), 1, 0)) %>%
+  mutate(pov_q.80 = ifelse(pov_perc <= quantile(pov_perc, 0.8) &
+                             pov_perc > quantile(pov_perc, 0.6), 1, 0)) %>%
+  mutate(pov_q.100 = ifelse(pov_perc <= quantile(pov_perc, 1) &
+                              pov_perc > quantile(pov_perc, 0.8), 1, 0))
+
+names(bg_vars)
 ext <- extent(bg_vars)
 r <- raster(ext, res = 4000)
-black_q_r <- fasterize(bg_vars, r, field = "black_q")
-writeRaster(black_q_r, filename = "data/black_q3.tif")
-black_q_im <- as.im(read_stars("data/black_q3.tif")) %>%
+rast <- fasterize(bg_vars, r, field = "tom_q")
+writeRaster(rast, filename = "data/quintiles/tom_q.tif")
+
+rast <- fasterize(poverty, r, field = "pov_q.100")
+writeRaster(rast, filename = "data/quintiles/pov_q.100.tif")
+
+black_q_im <- as.im(read_stars("data/quintiles/black_q.tif")) %>%
   rescale(1000, "km")
 
 test <- st_drop_geometry(bg_vars)
@@ -161,15 +234,119 @@ skewness(test$aian_p_lc)
 table(bg_vars$aian_p == 0)
 
 # rasterize log-transformed poverty
-summary(poverty$pov_perc_lc)
+summary(ruca)
 
 ext <- extent(poverty)
 r <- raster(ext, res = 4000)
-pov_r <- fasterize(poverty, r, field = "pov_perc_lc")
-writeRaster(pov_r, filename = "data/pov_lc_v2.tif")
-pov_im <- as.im(read_stars("data/pov_lc_v2.tif")) %>%
+pov_r <- fasterize(poverty, r, field = "pov_q.100")
+writeRaster(pov_r, filename = "data/quintiles/pov_q.100.tif")
+pov.100 <- as.im(read_stars("data/quintiles/pov_q.100.tif")) %>%
+  rescale(1000, "km")
+pov.80 <- as.im(read_stars("data/quintiles/pov_q.80.tif")) %>%
+  rescale(1000, "km")
+pov.60 <- as.im(read_stars("data/quintiles/pov_q.60.tif")) %>%
+  rescale(1000, "km")
+pov.40 <- as.im(read_stars("data/quintiles/pov_q.40.tif")) %>%
+  rescale(1000, "km")
+pov.20 <- as.im(read_stars("data/quintiles/pov_q.20.tif")) %>%
   rescale(1000, "km")
 
 
+# testing dummy covariates
+bg_vars <- bg_vars %>%
+  mutate(tom_q.20 = ifelse(bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.2), 1, 0)) %>%
+  mutate(tom_q.40 = ifelse(bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.4) &
+                              bg_vars$tom_p > quantile(bg_vars$tom_p, 0.2), 1, 0)) %>%
+  mutate(tom_q.60 = ifelse(bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.6) &
+                             bg_vars$tom_p > quantile(bg_vars$tom_p, 0.4), 1, 0)) %>%
+  mutate(tom_q.80 = ifelse(bg_vars$tom_p <= quantile(bg_vars$tom_p, 0.8) &
+                             bg_vars$tom_p > quantile(bg_vars$tom_p, 0.6), 1, 0)) %>%
+  mutate(tom_q.100 = ifelse(bg_vars$tom_p <= quantile(bg_vars$tom_p, 1) &
+                             bg_vars$tom_p > quantile(bg_vars$tom_p, 0.8), 1, 0)) %>%
+  mutate(black_q.20 = ifelse(bg_vars$black_p <= quantile(bg_vars$black_p, 0.2), 1, 0)) %>%
+  mutate(black_q.40 = ifelse(bg_vars$black_p <= quantile(bg_vars$black_p, 0.4) &
+                             bg_vars$black_p > quantile(bg_vars$black_p, 0.2), 1, 0)) %>%
+  mutate(black_q.60 = ifelse(bg_vars$black_p <= quantile(bg_vars$black_p, 0.6) &
+                             bg_vars$black_p > quantile(bg_vars$black_p, 0.4), 1, 0)) %>%
+  mutate(black_q.80 = ifelse(bg_vars$black_p <= quantile(bg_vars$black_p, 0.8) &
+                             bg_vars$black_p > quantile(bg_vars$black_p, 0.6), 1, 0)) %>%
+  mutate(black_q.100 = ifelse(bg_vars$black_p <= quantile(bg_vars$black_p, 1) &
+                              bg_vars$black_p > quantile(bg_vars$black_p, 0.8), 1, 0))  %>%
+  mutate(aian_q.20 = ifelse(bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.2), 1, 0)) %>%
+  mutate(aian_q.40 = ifelse(bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.4) &
+                               bg_vars$aian_p > quantile(bg_vars$aian_p, 0.2), 1, 0)) %>%
+  mutate(aian_q.60 = ifelse(bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.6) &
+                               bg_vars$aian_p > quantile(bg_vars$aian_p, 0.4), 1, 0)) %>%
+  mutate(aian_q.80 = ifelse(bg_vars$aian_p <= quantile(bg_vars$aian_p, 0.8) &
+                               bg_vars$aian_p > quantile(bg_vars$aian_p, 0.6), 1, 0)) %>%
+  mutate(aian_q.100 = ifelse(bg_vars$aian_p <= quantile(bg_vars$aian_p, 1) &
+                                bg_vars$aian_p > quantile(bg_vars$aian_p, 0.8), 1, 0))  %>%
+  mutate(asian_q.20 = ifelse(bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.2), 1, 0)) %>%
+  mutate(asian_q.40 = ifelse(bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.4) &
+                               bg_vars$asian_p > quantile(bg_vars$asian_p, 0.2), 1, 0)) %>%
+  mutate(asian_q.60 = ifelse(bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.6) &
+                               bg_vars$asian_p > quantile(bg_vars$asian_p, 0.4), 1, 0)) %>%
+  mutate(asian_q.80 = ifelse(bg_vars$asian_p <= quantile(bg_vars$asian_p, 0.8) &
+                               bg_vars$asian_p > quantile(bg_vars$asian_p, 0.6), 1, 0)) %>%
+  mutate(asian_q.100 = ifelse(bg_vars$asian_p <= quantile(bg_vars$asian_p, 1) &
+                                bg_vars$asian_p > quantile(bg_vars$asian_p, 0.8), 1, 0))  %>%
+  mutate(nhpi_q.20 = ifelse(bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.2), 1, 0)) %>%
+  mutate(nhpi_q.40 = ifelse(bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.4) &
+                               bg_vars$nhpi_p > quantile(bg_vars$nhpi_p, 0.2), 1, 0)) %>%
+  mutate(nhpi_q.60 = ifelse(bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.6) &
+                               bg_vars$nhpi_p > quantile(bg_vars$nhpi_p, 0.4), 1, 0)) %>%
+  mutate(nhpi_q.80 = ifelse(bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 0.8) &
+                               bg_vars$nhpi_p > quantile(bg_vars$nhpi_p, 0.6), 1, 0)) %>%
+  mutate(nhpi_q.100 = ifelse(bg_vars$nhpi_p <= quantile(bg_vars$nhpi_p, 1) &
+                                bg_vars$nhpi_p > quantile(bg_vars$nhpi_p, 0.8), 1, 0))  %>%
+  mutate(other_q.20 = ifelse(bg_vars$other_p <= quantile(bg_vars$other_p, 0.2), 1, 0)) %>%
+  mutate(other_q.40 = ifelse(bg_vars$other_p <= quantile(bg_vars$other_p, 0.4) &
+                               bg_vars$other_p > quantile(bg_vars$other_p, 0.2), 1, 0)) %>%
+  mutate(other_q.60 = ifelse(bg_vars$other_p <= quantile(bg_vars$other_p, 0.6) &
+                               bg_vars$other_p > quantile(bg_vars$other_p, 0.4), 1, 0)) %>%
+  mutate(other_q.80 = ifelse(bg_vars$other_p <= quantile(bg_vars$other_p, 0.8) &
+                               bg_vars$other_p > quantile(bg_vars$other_p, 0.6), 1, 0)) %>%
+  mutate(other_q.100 = ifelse(bg_vars$other_p <= quantile(bg_vars$other_p, 1) &
+                                bg_vars$other_p > quantile(bg_vars$other_p, 0.8), 1, 0))  %>%
+  mutate(hisp_q.20 = ifelse(bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.2), 1, 0)) %>%
+  mutate(hisp_q.40 = ifelse(bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.4) &
+                               bg_vars$hispanic_p > quantile(bg_vars$hispanic_p, 0.2), 1, 0)) %>%
+  mutate(hisp_q.60 = ifelse(bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.6) &
+                               bg_vars$hispanic_p > quantile(bg_vars$hispanic_p, 0.4), 1, 0)) %>%
+  mutate(hisp_q.80 = ifelse(bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 0.8) &
+                               bg_vars$hispanic_p > quantile(bg_vars$hispanic_p, 0.6), 1, 0)) %>%
+  mutate(hisp_q.100 = ifelse(bg_vars$hispanic_p <= quantile(bg_vars$hispanic_p, 1) &
+                                bg_vars$hispanic_p > quantile(bg_vars$hispanic_p, 0.8), 1, 0))
+
+ext <- extent(bg_vars)
+r <- raster(ext, res = 4000)
+rast <- fasterize(bg_vars, r, field = "hisp_q.100")
+writeRaster(rast, filename = "data/quintiles/hispanic_q.100.tif")
+rast <- fasterize(bg_vars, r, field = "hisp_q.80")
+writeRaster(rast, filename = "data/quintiles/hispanic_q.80.tif")
+rast <- fasterize(bg_vars, r, field = "hisp_q.60")
+writeRaster(rast, filename = "data/quintiles/hispanic_q.60.tif")
+rast <- fasterize(bg_vars, r, field = "hisp_q.40")
+writeRaster(rast, filename = "data/quintiles/hispanic_q.40.tif")
+rast <- fasterize(bg_vars, r, field = "hisp_q.20")
+writeRaster(rast, filename = "data/quintiles/hispanic_q.20.tif")
+
+
+
+hisp.20 <- as.im(read_stars('data/quintiles/hispanic_q.20.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
+  rescale(1000, "km")
+hisp.40 <- as.im(read_stars('data/quintiles/hispanic_q.40.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
+  rescale(1000, "km")
+hisp.60 <- as.im(read_stars('data/quintiles/hispanic_q.60.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
+  rescale(1000, "km")
+hisp.80 <- as.im(read_stars('data/quintiles/hispanic_q.80.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
+  rescale(1000, "km")
+hisp.100 <- as.im(read_stars('data/quintiles/hispanic_q.100.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
+  rescale(1000, "km")
+
+fit_co <- ppm(monitors.ppp_co ~ (aian + asian + black + hisp +
+                                   nhpi + other + tom)*pov*rural + offset(total))
+AIC(fit_co)
+summary(fit_co)
 
 

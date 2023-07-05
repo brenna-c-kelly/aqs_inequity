@@ -1,16 +1,20 @@
 
 library(sf)
+library(dplyr)
+
 aea <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +ellps=GRS80 +datum=NAD83"
-
-aqs <- read.csv("/Users/brenna/Downloads/aqs_sites-2.csv")
-table(aqs$Location.Setting, aqs$Land.Use)
-
-table(aqs$Site.Closed.Date == "")
-
-aqs <- aqs %>%
-  filter(Site.Closed.Date == "") # only open sites
-
+# 
+# aqs <- read.csv("/Users/brenna/Downloads/aqs_sites-2.csv")
+# table(aqs$Location.Setting, aqs$Land.Use)
+# 
+# table(aqs$Site.Closed.Date == "")
+# 
+# aqs <- aqs %>%
+#   filter(Site.Closed.Date == "") # only open sites
+table(aqs$Tribe.Name == "")
 mons <- read.csv("/Users/brenna/Downloads/annual_conc_by_monitor_2022.csv")
+head(mons)
+
 table(mons$Pollutant.Standard)
 
 length(unique(mons$lat_lon))
@@ -55,7 +59,7 @@ mons$criteria <- as.factor(mons$criteria)
 # no duplicate locations
 #mons <- mons[!duplicated(mons$lat_lon), ]
 
-table(!duplicated(mons$so2$lat_lon), mons$so2$criteria)
+table(duplicated(mons$co$lat_lon), mons$co$criteria)
 
 mons <- st_as_sf(mons, coords = c("Longitude", "Latitude"), 
                         crs = 4326, agr = "constant")
@@ -66,9 +70,10 @@ mons <- st_transform(mons, st_crs(aea))
 #aqs$Site.Number <- str_pad(aqs$Site.Number, 4, pad = "0")
 #mons$Site.Num <- str_pad(mons$Site.Num, 4, pad = "0")
 
-table(is.na(mons$o3$lat_lon))
+#table(is.na(mons$o3$lat_lon))
 
 mons <- split(mons, mons$criteria, 6)
+
 
 mons$pm <- mons$pm[!duplicated(mons$pm$lat_lon), ]
 mons$co <- mons$co[!duplicated(mons$co$lat_lon), ]

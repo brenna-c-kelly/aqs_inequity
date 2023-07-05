@@ -5,10 +5,15 @@ library(ggpubr)
 library(ggplot2)
 library(RColorBrewer)
 
+plot(fit_pm, 
+     how = 'image', 
+     se = TRUE, 
+     pause = FALSE)
+
 res_pm <- data.frame(summary(fit_pm)$coefs.SE.CI) %>%
   tibble::rownames_to_column("variable") %>%
   mutate(across(c(Estimate, S.E., CI95.lo, CI95.hi),
-                function(x) round(exp(x), 4)))
+                function(x) round(exp(x), 5)))
 res_co <- data.frame(summary(fit_co)$coefs.SE.CI) %>%
   tibble::rownames_to_column("variable") %>%
   mutate(across(c(Estimate, S.E., CI95.lo, CI95.hi),
@@ -30,6 +35,47 @@ res_so2 <- data.frame(summary(fit_so2)$coefs.SE.CI) %>%
   mutate(across(c(Estimate, S.E., CI95.lo, CI95.hi),
                 function(x) round(exp(x), 4)))
 
+res_pm$p_value <- ifelse(res_pm$Zval>= 0, pnorm(coef(summary(fit_pm))[, 6], lower.tail=FALSE), 
+                         1 - pnorm(coef(summary(fit_pm))[, 6], lower.tail=FALSE))
+res_pm$p_value_num <- round(res_pm$p_value, 3)
+
+res_co$p_value <- ifelse(res_co$Zval>= 0, pnorm(coef(summary(fit_co))[, 6], lower.tail=FALSE), 
+                         1 - pnorm(coef(summary(fit_co))[, 6], lower.tail=FALSE))
+res_co$p_value_num <- round(res_co$p_value, 3)
+
+res_no2$p_value <- ifelse(res_no2$Zval>= 0, pnorm(coef(summary(fit_no2))[, 6], lower.tail=FALSE), 
+                         1 - pnorm(coef(summary(fit_no2))[, 6], lower.tail=FALSE))
+res_no2$p_value_num <- round(res_no2$p_value, 3)
+
+res_o3$p_value <- ifelse(res_o3$Zval>= 0, pnorm(coef(summary(fit_o3))[, 6], lower.tail=FALSE), 
+                         1 - pnorm(coef(summary(fit_o3))[, 6], lower.tail=FALSE))
+res_o3$p_value_num <- round(res_o3$p_value, 3)
+
+res_pb$p_value <- ifelse(res_pb$Zval>= 0, pnorm(coef(summary(fit_pb))[, 6], lower.tail=FALSE), 
+                         1 - pnorm(coef(summary(fit_pb))[, 6], lower.tail=FALSE))
+res_pb$p_value_num <- round(res_pb$p_value, 3)
+
+res_so2$p_value <- ifelse(res_so2$Zval>= 0, pnorm(coef(summary(fit_so2))[, 6], lower.tail=FALSE), 
+                         1 - pnorm(coef(summary(fit_so2))[, 6], lower.tail=FALSE))
+res_so2$p_value_num <- round(res_so2$p_value, 3)
+
+
+
+write.csv(res_pm, "res_pm.csv", row.names = FALSE)
+write.csv(res_co, "res_co.csv", row.names = FALSE)
+write.csv(res_no2, "res_no2.csv", row.names = FALSE)
+write.csv(res_o3, "res_o3.csv", row.names = FALSE)
+write.csv(res_pb, "res_pb.csv", row.names = FALSE)
+write.csv(res_so2, "res_so2.csv", row.names = FALSE)
+
+aqs <- read.csv("/Users/brenna/Downloads/aqs_sites-2.csv")
+table(aqs$Site.Established.Date)
+
+aqs$est_year <- substr(aqs$Site.Established.Date, 0, 4)
+table(aqs$est_year, aqs$Site.Closed.Date == "")
+on_2011 <- aqs %>%
+  filter(est_year >= 2011)
+table(on_2011$Site.Closed.Date == "")
 
 fixed <- tibble::rownames_to_column(res_fig, "var")
 names(fixed) <- c("var", "coef")
