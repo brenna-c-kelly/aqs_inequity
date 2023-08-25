@@ -49,10 +49,35 @@ monitors_sf <- st_as_sf(monitors_sf, coords = c("long", "lat"),
                         crs = 4326, agr = "constant")
 monitors_sf <- st_transform(monitors_sf, st_crs(aea))
 # convert to ppp
+mon_crds <- st_coordinates(mons$co)#monitors_criteria)#test)#monitors_sf)
+monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
+                    window = states_shp.win)#, marks = mons$criteria) #us.proj.win)
+monitors.ppp_co <- rescale(monitors.ppp, 1000, "km")
+# convert to ppp
+mon_crds <- st_coordinates(mons$no2)#monitors_criteria)#test)#monitors_sf)
+monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
+                    window = states_shp.win)#, marks = mons$criteria) #us.proj.win)
+monitors.ppp_no2 <- rescale(monitors.ppp, 1000, "km")
+# convert to ppp
+mon_crds <- st_coordinates(mons$o3)#monitors_criteria)#test)#monitors_sf)
+monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
+                    window = states_shp.win)#, marks = mons$criteria) #us.proj.win)
+monitors.ppp_o3 <- rescale(monitors.ppp, 1000, "km")
+# convert to ppp
+mon_crds <- st_coordinates(mons$pb)#monitors_criteria)#test)#monitors_sf)
+monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
+                    window = states_shp.win)#, marks = mons$criteria) #us.proj.win)
+monitors.ppp_pb <- rescale(monitors.ppp, 1000, "km")
+# convert to ppp
 mon_crds <- st_coordinates(mons$pm)#monitors_criteria)#test)#monitors_sf)
 monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
                     window = states_shp.win)#, marks = mons$criteria) #us.proj.win)
 monitors.ppp_pm <- rescale(monitors.ppp, 1000, "km")
+# convert to ppp
+mon_crds <- st_coordinates(mons$so2)#monitors_criteria)#test)#monitors_sf)
+monitors.ppp <- ppp(x = mon_crds[, 1], y = mon_crds[, 2], 
+                    window = states_shp.win)#, marks = mons$criteria) #us.proj.win)
+monitors.ppp_so2 <- rescale(monitors.ppp, 1000, "km")
 #monitors.ppp_pm <- rjitter(monitors.ppp, edge = "none")
 
 # rasterized covariates
@@ -78,30 +103,35 @@ pov <- as.im(read_stars('data/quintiles/pov_q.tif')) %>%#("data/tifs/pov_lc.tif"
   rescale(1000, "km")
 total <- as.im(read_stars("data/tifs/total_lc.tif")) %>%
   rescale(1000, "km")
-
-
-# n <- npoints(monitors.ppp)
-# freq <- rpois(n, 3)
-# ind <- rep(seq_len(n), freq)
-# monitors.pppmonitors.ppp <- monitors.ppp[ind]
-# ppm(beibei ~ grad+elev, data=bei.extra)
-
-plot(aian)
-plot(monitors.ppp_so2, add = TRUE)
+# nonattainment / maintenance areas
+naa_co <- as.im(read_stars("data/naa_co.tif")) %>%
+  rescale(1000, "km")
+naa_no2 <- as.im(read_stars("data/naa_no2.tif")) %>%
+  rescale(1000, "km")
+naa_o3 <- as.im(read_stars("data/naa_o3.tif")) %>%
+  rescale(1000, "km")
+naa_pb <- as.im(read_stars("data/naa_pb.tif")) %>%
+  rescale(1000, "km")
+naa_pm <- as.im(read_stars("data/naa_pm.tif")) %>%
+  rescale(1000, "km")
+naa_so2 <- as.im(read_stars("data/naa_so2.tif")) %>%
+  rescale(1000, "km")
 
 # ppms by criteria pollutant
 fit_co <- ppm(monitors.ppp_co ~ (aian + asian + black + hisp +
-                                   nhpi + other + tom)*pov*rural + offset(total))
+                                   nhpi + other + tom)*pov*rural + naa_co + offset(total))
 fit_no2 <- ppm(monitors.ppp_no2 ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov*rural + offset(total))
+                                nhpi + other + tom)*pov*rural + naa_no2 + offset(total)) # 3.2
 fit_o3 <- ppm(monitors.ppp_o3 ~ (aian + asian + black + hisp +
-                                 nhpi + other + tom)*pov*rural + offset(total))
+                                 nhpi + other + tom)*pov*rural + naa_o3 + offset(total))
 fit_pb <- ppm(monitors.ppp_pb ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov*rural + offset(total))
+                                nhpi + other + tom)*povrural + naa_pb + offset(total)) # 13.7
 fit_pm <- ppm(monitors.ppp_pm ~ (aian + asian + black + hisp +
-                                nhpi + other + tom)*pov*rural + offset(total))
+                                nhpi + other + tom)*pov*rural + naa_pm + offset(total)) # 2.1
 fit_so2 <- ppm(monitors.ppp_so2 ~ (aian + asian + black + hisp +
-                                     nhpi + other + tom)*pov*rural + offset(total))
+                                     nhpi + other + tom)*pov*rural + naa_so2 + offset(total)) 
+summary(fit_co)
+AIC(fit_co)
 fit_so2$Q
 fit_pm$Q
 fit_pb$Q
@@ -116,6 +146,7 @@ AIC(fit_pb)
 AIC(fit_pm)
 AIC(fit_so2)
 
+VIF(fit_pm)
 
 # > AIC(fit_co)
 # [1] 4882.603 / 4880.171 / 4904.138 / 4901.207
@@ -148,6 +179,10 @@ summary(fit_so2)
 
 fit_no2$internal$glmfit
 fit_so2$internal$glmdata
+
+
+
+VIF
 
 # race*urban*pov + off(total):      63505.4 / 25402.22
 # race*metro + pov + off(total):    63653.6 / 25550.43

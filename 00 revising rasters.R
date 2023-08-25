@@ -1,28 +1,26 @@
 
+library(sf)
 library(tidyr)
 library(dplyr)
 library(purrr)
 library(raster)
 library(viridis)
 library(fasterize)
+library(tidycensus)
+
+
 
 bg_vars <- function(ST) {
   for (i in ST) {
     z_st <- get_acs(geography = "block group",
-                    variables = c(#'B25003_003'#, #renter
-                      #'B25003_002', #owner
-                      #'B15003_001', #denom
-                      'C17002_003', 'C17002_002', 'C17002_001'#, #below pov
-                      #'C17002_005', 'C17002_006', 'C17002_007', #over
-                      #'C17002_008', # way over
-                      #'C17002_001', # denom
-                      #'B01001_006', 'B01001_005', 'B01001_004', 'B01001_003', #male under 18
-                      #'B01001_027', 'B01001_028', 'B01001_029', 'B01001_030', # female under 18
-                      #'B01001_020', 'B01001_021', 'B01001_022', 'B01001_023', 'B01001_024', 'B01001_025', #older male
-                      #'B01001_044', 'B01001_045', 'B01001_046', 'B01001_047', 'B01001_048', 'B01001_049', #older female
-                      #                            'B01001_026', #female denom
-                      #                            'B01001_002' #male denom
-                    ),
+                    variables = c('B03002_004', # black 
+                                  'B03002_005', #aian 
+                                  'B03002_006', #asian 
+                                  'B03002_007', #nhpi 
+                                  'B03002_008', #som 
+                                  'B03002_009', #tom 
+                                  'B03002_012'),
+                    #hisp, #"B02001_002"),#'B01001_001'),
                     state = i,
                     geometry = TRUE,
                     year = 2020,
@@ -30,37 +28,31 @@ bg_vars <- function(ST) {
     z_st <- z_st %>%
       spread(variable, estimate) %>%
       group_by(GEOID) %>%
-      fill(#B25003_003, #renter
-        #B25003_002, #owner
-        #B15003_001, #denom
-        C17002_003, C17002_002, C17002_001#, #below pov
-        #C17002_005, C17002_006, C17002_007, #over
-        #C17002_008, # way over
-        #C17002_001, # denom
-        #B01001_006, B01001_005, B01001_004, B01001_003, #male under 18
-        #B01001_027, B01001_028, B01001_029, B01001_030, # female under 18
-        #B01001_020, B01001_021, B01001_022, B01001_023, B01001_024, B01001_025, #older male
-        #B01001_044, B01001_045, B01001_046, B01001_047, B01001_048, B01001_049, #older female
-        #B01001_026, #female denom
-        #B01001_002 #male denom
-      ) %>%
-      #rename(total = P1_001N, hispanic = P2_002N, #Hispanic/Latino
-      #       white = P2_005N, black = P2_006N, #Black or African American alone
-      #       aian = P2_007N, asian = P2_008N, #Asian alone
-      #       nhpi = P2_009N, other = P2_010N, #Some Other Race alone
-      #       tom = P2_011N) %>%
-      # mutate(#renter_prop = B25003_003/B15003_001, #Hispanic/Latino
-      #       owner_prop = B25003_002/B15003_001,
-      #      below_pov_prop = (C17002_004+C17002_003+C17002_002)/C17002_001#, #White
-      #       under_18 = (B01001_006+B01001_005+B01001_004+B01001_003+
-      #                     B01001_027+B01001_028+B01001_029+B01001_030)/(B01001_026+B01001_002),
-      #       older = (B01001_020+B01001_021+B01001_022+B01001_023+B01001_024+B01001_025+
-    #                     B01001_044+B01001_045+B01001_046+B01001_047+B01001_048+B01001_049)/(B01001_026+B01001_002)
-    #      ) %>%
-    drop_na()
-    st_write(z_st, paste0("data/poverty/", i, ".shp"))
-  }
+      fill(B03002_004, # black
+           B03002_005, #aian
+           B03002_006, #asian
+           B03002_007, #nhpi
+           B03002_008, #som
+           B03002_009, #tom
+           B03002_012) %>% #hisp) %>%
+      rename(black = B03002_004, #
+             aian = B03002_005, #
+             asian = B03002_006, #
+             nhpi = B03002_007, #
+             som = B03002_008, #
+             tom = B03002_009, #
+             hisp = B03002_012) %>%
+      drop_na()#)
+     st_write(z_st, paste0("data/race/", i, ".shp"))}
 }
+# 
+# B03002_004 # black
+# B03002_005 #aian
+# B03002_006 #asian
+# B03002_007 #nhpi
+# B03002_008 #som
+# B03002_009 #tom
+# B03002_012 #hisp
 
 ST <- c("AL", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", 
         "FL", "GA", "ID", "IL", "IN", "IA", "KS", "KY",
@@ -68,11 +60,50 @@ ST <- c("AL", "AZ", "AR", "CA", "CO", "CT", "DE", "DC",
         "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", 
         "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", 
         "VT", "VA", "WA", "WV", "WI", "WY")
+
 bg_vars(ST)
 
-bg_covs <- map(list.files("data/poverty/", full.names = T, pattern = ".shp"), st_read) %>%
+bg_covs <- map(list.files("data/race/", full.names = T, pattern = ".shp"), st_read) %>%
   bind_rows() %>%
-  st_write("data/poverty.shp")
+  st_write("data/race_pop.shp")
+
+# white <- st_read("data/white_pop.shp")
+# pop <- st_read("data/total_pop.shp")
+# white <- st_drop_geometry(white)
+# 
+# white_pop <- merge(pop, white, by = "GEOID")
+# white_pop$non_white <- white_pop$total.x - white_pop$total.y
+# white_pop$non_white_p <- white_pop$non_white / white_pop$total.x
+# white_pop$white_pop_q <- ifelse(white_pop$non_white > median(white_pop$non_white),
+                                1, 0)
+
+white_pop <- st_transform(white_pop, st_crs(aea))
+
+ext <- extent(white_pop)
+r <- raster(ext, res = 4000)
+table(st_is_empty(white))
+
+library(moments)
+white_pop <- white_pop[!st_is_empty(white_pop), , drop=FALSE]
+min(white_pop[which(white_pop$non_white > 0), ]$non_white)
+skewness(log(white_pop$non_white + 1))
+
+white_pop_r <- fasterize(white_pop, r, field = "white_pop_q")
+
+#plot(total_pop_r)
+writeRaster(white_pop_r, filename = "data/nonwhite_q_pop.tif", overwrite = TRUE)
+#head(total_pop_r)
+
+#tm_shape(population) +
+#  tm_polygons(col = "total")
+
+
+total_2 <- as.im(read_stars("data/total_pop.tif")) %>%
+  rescale(1000, "km")
+plot(total)
+
+
+head(population)
 
 plot(pov)
 
@@ -120,6 +151,8 @@ bg_vars$black_q <- case_when(bg_vars$black_p <= quantile(bg_vars$black_p, 0.25) 
                              bg_vars$black_p > quantile(bg_vars$black_p, 0.75) ~ "0.75-1.00")
 bg_vars$black_q <- ifelse(bg_vars$black_p > quantile(bg_vars$black_p, 0.75), "1", "0")
 bg_vars$black_q <- relevel(as.factor(bg_vars$black_q), ref = "0-0.25")
+
+head(bg_covs)
 
 bg_vars <- bg_vars %>%
   mutate(black_q = case_when(bg_vars$black_p <= quantile(bg_vars$black_p, 0.2) ~ -2,
@@ -198,6 +231,8 @@ poverty <- poverty %>%
                              pov_perc > quantile(pov_perc, 0.6), 1, 0)) %>%
   mutate(pov_q.100 = ifelse(pov_perc <= quantile(pov_perc, 1) &
                               pov_perc > quantile(pov_perc, 0.8), 1, 0))
+
+summary(poverty$pov_q)
 
 names(bg_vars)
 ext <- extent(bg_vars)
