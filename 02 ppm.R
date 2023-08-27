@@ -81,27 +81,27 @@ monitors.ppp_so2 <- rescale(monitors.ppp, 1000, "km")
 #monitors.ppp_pm <- rjitter(monitors.ppp, edge = "none")
 
 # rasterized covariates
-aian <- as.im(read_stars('data/quintiles/aian_q.tif')) %>%#"data/tifs/aian_lc.tif")) %>%
+aian <- as.im(read_stars('data/aian_q_50.tif')) %>%#"data/tifs/aian_lc.tif")) %>%
   rescale(1000, "km")
-asian <- as.im(read_stars('data/quintiles/asian_q.tif')) %>%#("data/tifs/asian_lc.tif")) %>%
+asian <- as.im(read_stars('data/asian_p_50.tif')) %>%#("data/tifs/asian_lc.tif")) %>%
   rescale(1000, "km")
-black <- as.im(read_stars('data/quintiles/black_q.tif')) %>%#("data/tifs/black_lc.tif")) %>%
+black <- as.im(read_stars('data/black_p_50.tif')) %>%#("data/tifs/black_lc.tif")) %>%
   rescale(1000, "km")
-hisp <- as.im(read_stars('data/quintiles/hispanic_q.tif')) %>%#("data/tifs/hispanic_lc.tif")) %>%
+hisp <- as.im(read_stars('data/hisp_p_50.tif')) %>%#("data/tifs/hispanic_lc.tif")) %>%
   rescale(1000, "km")
-nhpi <- as.im(read_stars('data/quintiles/nhpi_q.tif')) %>%#("data/tifs/nhpi_lc.tif")) %>%
+nhpi <- as.im(read_stars('data/nhpi_p_50.tif')) %>%#("data/tifs/nhpi_lc.tif")) %>%
   rescale(1000, "km")
-other <- as.im(read_stars('data/quintiles/other_q.tif')) %>%#("data/tifs/other_lc.tif")) %>%
+other <- as.im(read_stars('data/other_p_50.tif')) %>%#("data/tifs/other_lc.tif")) %>%
   rescale(1000, "km")
-tom <- as.im(read_stars('data/quintiles/tom_q.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
+tom <- as.im(read_stars('data/tom_p_50.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
   rescale(1000, "km")
 rural <- as.im(read_stars('data/rural_urban.tif')) %>%#("data/tifs/metro.tif")) %>%
   rescale(1000, "km") ##
 #urban <- as.im(read_stars('data/quintiles/aian_q.tif')) %>%#("data/urban.tif")) %>%
 #  rescale(1000, "km")
-pov <- as.im(read_stars('data/quintiles/pov_q.tif')) %>%#("data/tifs/pov_lc.tif")) %>%
+pov <- as.im(read_stars('data/pov_p_50.tif')) %>%#("data/tifs/pov_lc.tif")) %>%
   rescale(1000, "km")
-total <- as.im(read_stars("data/tifs/total_lc.tif")) %>%
+total <- as.im(read_stars("data/total_10k.tif")) %>%
   rescale(1000, "km")
 # nonattainment / maintenance areas
 naa_co <- as.im(read_stars("data/naa_co.tif")) %>%
@@ -117,6 +117,15 @@ naa_pm <- as.im(read_stars("data/naa_pm.tif")) %>%
 naa_so2 <- as.im(read_stars("data/naa_so2.tif")) %>%
   rescale(1000, "km")
 
+nonwhite <- as.im(read_stars("data/nonwhite_q_pop.tif")) %>%
+  rescale(1000, "km")
+
+plot(nonwhite)
+fit_co_nw <- ppm(monitors.ppp_co ~ (nonwhite)*pov*rural + naa_co + offset(total))
+summary(fit_co_nw)
+AIC(fit_co_nw)
+#qqplot.ppm(fit_co_nw)
+
 # ppms by criteria pollutant
 fit_co <- ppm(monitors.ppp_co ~ (aian + asian + black + hisp +
                                    nhpi + other + tom)*pov*rural + naa_co + offset(total))
@@ -131,6 +140,10 @@ fit_pm <- ppm(monitors.ppp_pm ~ (aian + asian + black + hisp +
 fit_so2 <- ppm(monitors.ppp_so2 ~ (aian + asian + black + hisp +
                                      nhpi + other + tom)*pov*rural + naa_so2 + offset(total)) 
 summary(fit_co)
+
+
+qqplot.ppm(fit_so2)
+
 AIC(fit_co)
 fit_so2$Q
 fit_pm$Q
@@ -148,6 +161,7 @@ AIC(fit_so2)
 
 VIF(fit_pm)
 
+plot(monitors.ppp_o3)
 # > AIC(fit_co)
 # [1] 4882.603 / 4880.171 / 4904.138 / 4901.207
 # > AIC(fit_no2)

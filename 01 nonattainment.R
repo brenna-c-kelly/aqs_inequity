@@ -3,7 +3,10 @@ library(sf)
 library(tmap)
 library(dplyr)
 library(raster)
+library(viridis)
 library(fasterize)
+library(tidycensus)
+library(wesanderson)
 
 naa_o3 <- st_read("/Users/brenna/Downloads/ozone_8hr_2015std_naa_shapefile")
 naa_pm <- st_read("/Users/brenna/Downloads/pm25_2012std_naa_shapefile")
@@ -15,6 +18,29 @@ naa_co <- st_read("/Users/brenna/Downloads/co_1971std_naa_shapefile") # maintena
 
 naa_co <- st_transform(naa_co, st_crs(aea))
 
+print(wes_palette("Zissou1", 21, type = "continuous"))
+poverty
+
+total_l <- log(total)
+viridis(100, option = "")
+plot(log(total), col = viridis(100, direction = -1, option = "mako")) #col = c("#faf6bc", "#dfe9b4", "#c6ddac",
+                            # "#a4d0ae", "#83c4b0", "#57a1b3",
+                            # "#377fb8", "#2b5c9e", "#2c3985"))#col = rev(wes_palette("Zissou1", 21, type = "continuous")))#col = c("#29388a", "#fbf6b5", "#ff0000"))
+
+col = c("#faf6bc", "#dfe9b4", "#c6ddac",
+       "#a4d0ae", "#83c4b0", "#57a1b3",
+       "#377fb8", "#2b5c9e", "#2c3985")
+
+plot(nhpi.tess, col = c("#2c3985", "#faf6bc"))
+
+pal <- brewer.pal(9, "OrRd")
+
+median(bg_covs$aian_p)
+
+tm_shape(poverty) +
+  tm_polygons(col = "pov_p", lwd = 0, palette = c("#bedca5", "#f9f4b3",
+                                                  "#fa8a3c", "#ec4a22", "#bb2503"),
+              style = "cont")
 
 poverty <- st_read("data/poverty.shp")
 poverty <- poverty[!st_is_empty(poverty), , drop=FALSE]
@@ -132,13 +158,15 @@ writeRaster(all_pm_r, filename = "data/naa_pm.tif")
 # o3
 naa_o3 <- st_transform(naa_o3, st_crs(aea))
 naa_o3 <- st_make_valid(naa_o3)
-naa_o3_group <- naa_co %>% 
+naa_o3_group <- naa_o3 %>% 
   summarise(geometry = sf::st_union(geometry)) %>%
   ungroup()
 
-aa_o3 <- st_difference(us_geog, naa_o3_group)
-aa_o3 <- aa_o3[, c(1, 2)]
-naa_o3 <- naa_o3[, c(1, 2)]
+aa_o3 <- st_difference(all_areas, naa_o3_group)
+aa_o3$composite = "Ozone"
+aa_o3$AREA_NAME = "AA"
+#aa_o3 <- aa_o3[, c(1, 2)]
+naa_o3 <- naa_o3[, c("geometry")]
 names(aa_o3) <- names(naa_o3)
 
 aa_o3$naa <- 0
@@ -149,7 +177,8 @@ all_o3 <- rbind(aa_o3, naa_o3)
 ext <- extent(poverty)
 r <- raster(ext, res = 4000)
 naa_o3_r <- fasterize(st_collection_extract(all_o3, "POLYGON"), r, field = "naa")
-writeRaster(naa_o3_r, filename = "data/naa_o3.tif")
+writeRaster(naa_o3_r, filename = "data/naa_o3.tif", overwrite = TRUE)
+
 
 # co
 naa_co <- st_make_valid(naa_co)
