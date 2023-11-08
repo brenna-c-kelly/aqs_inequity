@@ -11,7 +11,7 @@ aea <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +ellps=GRS80 +d
 # 
 # aqs <- aqs %>%
 #   filter(Site.Closed.Date == "") # only open sites
-table(aqs$Tribe.Name == "")
+
 mons <- read.csv("/Users/brenna/Downloads/annual_conc_by_monitor_2022.csv")
 head(mons)
 
@@ -84,10 +84,10 @@ mons$so2 <- mons$so2[!duplicated(mons$so2$lat_lon), ]
 
 #table(mons$criteria)
 
-
-table(mons$criteria)
-length(unique(mons$Site.Num))
-
-test <- merge(mons, aqs, by.x = "Site.Num", by.y = "Site.Number", all.x = TRUE)
-
-
+# 
+# table(mons$criteria)
+# length(unique(mons$Site.Num))
+# 
+# test <- merge(mons, aqs, by.x = "Site.Num", by.y = "Site.Number", all.x = TRUE)
+# 
+# 

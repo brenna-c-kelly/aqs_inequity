@@ -2,6 +2,7 @@
 library(sf)
 library(stars)
 library(raster)
+library(scales)
 library(spatstat)
 library(regclass)
 library(tidycensus)
@@ -83,23 +84,23 @@ monitors.ppp_so2 <- rescale(monitors.ppp, 1000, "km")
 # rasterized covariates
 aian <- as.im(read_stars('data/aian_q_50.tif')) %>%#"data/tifs/aian_lc.tif")) %>%
   rescale(1000, "km")
-asian <- as.im(read_stars('data/asian_p_50.tif')) %>%#("data/tifs/asian_lc.tif")) %>%
+asian <- as.im(read_stars('data/asian_q_50.tif')) %>%#("data/tifs/asian_lc.tif")) %>%
   rescale(1000, "km")
-black <- as.im(read_stars('data/black_p_50.tif')) %>%#("data/tifs/black_lc.tif")) %>%
+black <- as.im(read_stars('data/black_q_50.tif')) %>%#("data/tifs/black_lc.tif")) %>%
   rescale(1000, "km")
-hisp <- as.im(read_stars('data/hisp_p_50.tif')) %>%#("data/tifs/hispanic_lc.tif")) %>%
+hisp <- as.im(read_stars('data/hisp_q_50.tif')) %>%#("data/tifs/hispanic_lc.tif")) %>%
   rescale(1000, "km")
-nhpi <- as.im(read_stars('data/nhpi_p_50.tif')) %>%#("data/tifs/nhpi_lc.tif")) %>%
+nhpi <- as.im(read_stars('data/nhpi_q_50.tif')) %>%#("data/tifs/nhpi_lc.tif")) %>%
   rescale(1000, "km")
-other <- as.im(read_stars('data/other_p_50.tif')) %>%#("data/tifs/other_lc.tif")) %>%
+other <- as.im(read_stars('data/other_q_50.tif')) %>%#("data/tifs/other_lc.tif")) %>%
   rescale(1000, "km")
-tom <- as.im(read_stars('data/tom_p_50.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
+tom <- as.im(read_stars('data/tom_q_50.tif')) %>%#("data/tifs/tom_lc.tif")) %>%
   rescale(1000, "km")
 rural <- as.im(read_stars('data/rural_urban.tif')) %>%#("data/tifs/metro.tif")) %>%
   rescale(1000, "km") ##
 #urban <- as.im(read_stars('data/quintiles/aian_q.tif')) %>%#("data/urban.tif")) %>%
 #  rescale(1000, "km")
-pov <- as.im(read_stars('data/pov_p_50.tif')) %>%#("data/tifs/pov_lc.tif")) %>%
+pov <- as.im(read_stars('data/pov_q_50.tif')) %>%#("data/tifs/pov_lc.tif")) %>%
   rescale(1000, "km")
 total <- as.im(read_stars("data/total_10k.tif")) %>%
   rescale(1000, "km")
@@ -128,7 +129,8 @@ AIC(fit_co_nw)
 
 # ppms by criteria pollutant
 fit_co <- ppm(monitors.ppp_co ~ (aian + asian + black + hisp +
-                                   nhpi + other + tom)*pov*rural + naa_co + offset(total))
+                                   nhpi + other + tom)*pov*rural + naa_co + offset(total),
+              covariates = mons)
 fit_no2 <- ppm(monitors.ppp_no2 ~ (aian + asian + black + hisp +
                                 nhpi + other + tom)*pov*rural + naa_no2 + offset(total)) # 3.2
 fit_o3 <- ppm(monitors.ppp_o3 ~ (aian + asian + black + hisp +
